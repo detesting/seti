@@ -1,0 +1,108 @@
+import random
+import math
+import pylab
+
+def Time(N, L): #функция времени
+    timer = [] #массив со всеми таймингами
+    i = 0 #обнуляем счетчик
+    a = 0
+    while i != N:
+        a -= math.log(random.random())/L #определяем значение времени по экспоненциальному закону
+        timer.append(a) #добавляем его в массив
+        i += 1
+    return timer
+
+def CpMN (time, timer1):
+    i = 0
+    MN = 0
+    while i != len(timer1):
+        if timer1[i] <= time:
+            MN +=1
+        i += 1
+    return MN
+
+def synhron(timer):
+    i = 0
+    time = 0
+    D_synS = []
+    timer1 = timer[:]
+    MN_synS = []
+    MN_syn = 0
+    D_cp = 0
+    MN_cp = 0
+    while i != len(timer):
+        if timer[i] <= time:
+            D_syn = time - timer[i] + 1
+            D_cp += D_syn
+            D_synS.append(D_syn)
+            timer1.pop(0)
+            MN_syn = CpMN(time, timer1)
+            MN_cp += MN_syn
+            MN_synS.append(MN_syn)
+            #print("отправ: " + str(time) + " ---- " + str(timer[i]))
+            i += 1
+        else:
+            pass
+            #print(" не отпр " + str(time))
+        time += 1
+    D_cp = D_cp/len(D_synS)
+    MN_cp = MN_cp/len(MN_synS)
+    return D_cp, MN_cp
+
+def asynhron(timer):
+    i = 0
+    time = timer[0]
+    D_asyn = 0
+    D_asynS =[]
+    D_cp = 0
+    while i != len(timer):
+        if timer[i] <= time:
+            D_asyn = time - timer[i] + 1
+            D_cp += D_asyn
+            D_asynS.append(D_asyn)
+            i += 1
+            time += 1
+        else:
+            time += 0.001
+    D_cp = D_cp/len(D_asynS)
+    return D_cp
+
+L = 0.1;
+N = int(input("Введите кол-во запросов ")) #количество запросов
+Ls = []
+D_synS = []
+MN_synS = []
+
+D_asyn = 0
+D_asynS = []
+
+D_synTheoryS = []
+MN_synTheoryS = []
+D_asinTheoryS = []
+while L <= 0.99:
+    timer = Time(N, L)
+    D_syn, MN_syn = synhron(timer)
+    D_asyn = asynhron(timer)
+
+    D_synTheory = L*(2-L)/(2*(1-L))/L +0.5
+    MN_synTheory = L*(2-L)/(2*(1-L))
+    D_asinTheory = L * (2 - L) / (2 * (1 - L)) / L
+
+    D_synTheoryS.append(D_synTheory)
+    MN_synTheoryS.append(MN_synTheory)
+    D_asinTheoryS.append(D_asinTheory)
+
+    D_synS.append(D_syn)
+    MN_synS.append(MN_syn)
+    D_asynS.append(D_asyn)
+
+    Ls.append(L)
+    L += 0.1
+pylab.plot(Ls, D_synS, "green")
+pylab.plot(Ls, D_synTheoryS, "yellow")
+pylab.plot(Ls, D_asynS, "red")
+pylab.plot(Ls, D_asinTheoryS, "pink")
+pylab.show()
+pylab.plot(Ls, MN_synS, "blue")
+pylab.plot(Ls, MN_synTheoryS, "green")
+pylab.show()
