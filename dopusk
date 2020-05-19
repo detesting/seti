@@ -16,7 +16,7 @@ def CpMN (time, timer1):
     i = 0
     MN = 0
     while i != len(timer1):
-        if timer1[i] <= time:
+        if timer1[i] <= time+0.5:
             MN +=1
         i += 1
     return MN
