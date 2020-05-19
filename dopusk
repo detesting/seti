@@ -2,26 +2,26 @@ import random
 import math
 import pylab
 
-def Time(N, L): #функция времени
+def Time(N, L): #функция для определения времени прихода всех сообщений
     timer = [] #массив со всеми таймингами
-    i = 0 #обнуляем счетчик
+    i = 0
     a = 0
-    while i != N:
+    while i != N: #пока не закончились запросы
         a -= math.log(random.random())/L #определяем значение времени по экспоненциальному закону
         timer.append(a) #добавляем его в массив
         i += 1
-    return timer
+    return timer #возвращаем массив со всеми таймингами
 
-def CpMN (time, timer1):
+def CpMN (time, timer1): #функция для подсчета MN
     i = 0
     MN = 0
-    while i != len(timer1):
-        if timer1[i] <= time+0.5:
-            MN +=1
+    while i != len(timer1): #пока не закончился timer1
+        if timer1[i] <= time+0.5: #если время i-го сообщения меньше, чем исходное время +0,5
+            MN +=1 #увеличиваем счетчик очереди
         i += 1
-    return MN
+    return MN #возвращаем MN
 
-def synhron(timer):
+def synhron(timer): #функция для синхронной системы
     i = 0
     time = 0
     D_synS = []
@@ -30,79 +30,73 @@ def synhron(timer):
     MN_syn = 0
     D_cp = 0
     MN_cp = 0
-    while i != len(timer):
-        if timer[i] <= time:
-            D_syn = time - timer[i] + 1
-            D_cp += D_syn
-            D_synS.append(D_syn)
-            timer1.pop(0)
-            MN_syn = CpMN(time, timer1)
-            MN_cp += MN_syn
-            MN_synS.append(MN_syn)
-            #print("отправ: " + str(time) + " ---- " + str(timer[i]))
+    while i != len(timer): #пока не прошли все запросы
+        if timer[i] <= time: #если время прихода запроса меньше текущего времени
+            D_syn = time - timer[i] + 1 #считаем задержку
+            D_cp += D_syn #складываем все задержки
+            D_synS.append(D_syn) #добавляем в массив значение задержки
+            timer1.pop(0) #удаляем обрабатываемый запрос
+            MN_syn = CpMN(time, timer1) #вызываем функцию для подсчета MN
+            MN_cp += MN_syn #складываем все MN
+            MN_synS.append(MN_syn) #добавляем в массив значение MN
             i += 1
-        else:
-            pass
-            #print(" не отпр " + str(time))
         time += 1
-    D_cp = D_cp/len(D_synS)
-    MN_cp = MN_cp/len(MN_synS)
-    return D_cp, MN_cp
+    D_cp = D_cp/len(D_synS) #сумму всех задержек делим на длину массива (количество запросов)
+    MN_cp = MN_cp/len(MN_synS) #сумму всех MN делим на длину массива (количество запросов)
+    return D_cp, MN_cp #возвращаем среднюю задержку и среднее MN
 
-def asynhron(timer):
+def asynhron(timer): #функция для асинхронной системы
     i = 0
-    time = timer[0]
+    time = timer[0] #чтобы начало было с первого запроса
     D_asyn = 0
     D_asynS =[]
     D_cp = 0
-    while i != len(timer):
-        if timer[i] <= time:
-            D_asyn = time - timer[i] + 1
-            D_cp += D_asyn
-            D_asynS.append(D_asyn)
+    while i != len(timer): #пока не закончились запросы
+        if timer[i] <= time: #если время запроса меньше основного времени
+            D_asyn = time - timer[i] + 1 #считаем задержку
+            D_cp += D_asyn #складываем все задержки
+            D_asynS.append(D_asyn) #добавляем в массив задержку
             i += 1
             time += 1
         else:
             time += 0.01
-    D_cp = D_cp/len(D_asynS)
-    return D_cp
+    D_cp = D_cp/len(D_asynS) #сумму всех задержек делим на длину массива
+    return D_cp #возвращаем среднюю задержку
 
-L = 0.1;
+L = 0.1; #начальная лямбда
 N = int(input("Введите кол-во запросов ")) #количество запросов
-Ls = []
-D_synS = []
-MN_synS = []
+Ls = [] #массив всех лямбд
+D_synS = [] #массив всех средних задержек для синхронной системы
+MN_synS = [] #массив всех средних MN для синхронной системы
+D_asynS = [] #массив всех средних задержек для асинхронной системы
 
-D_asyn = 0
-D_asynS = []
+D_synTheoryS = [] #массив теоретических средних задержек для синхронной системы
+MN_synTheoryS = [] #массив теоретических MN для синхронной системы
+D_asinTheoryS = [] #массив теоретических средних задержек для асинхронной системы
+while L <= 0.99: #пока лямбда меньше 0,99
+    timer = Time(N, L) #считаем для всех запросов время прибытия при данной лямбде
+    D_syn, MN_syn = synhron(timer) #находим среднюю задержку и среднее MN для синхронной системы для данной лямбды
+    D_asyn = asynhron(timer) #находим среднюю зарежку для асинхронной системы для данной лямбды
 
-D_synTheoryS = []
-MN_synTheoryS = []
-D_asinTheoryS = []
-while L <= 0.99:
-    timer = Time(N, L)
-    D_syn, MN_syn = synhron(timer)
-    D_asyn = asynhron(timer)
+    D_synTheory = L*(2-L)/(2*(1-L))/L +0.5 #считаем теоретическое значение средней задержки для синхронной системы для данной лямбды
+    MN_synTheory = L*(2-L)/(2*(1-L)) #считаем среднюю MN для синхронной системы для данной лямбды
+    D_asinTheory = L * (2 - L) / (2 * (1 - L)) / L #считаем теоретическое значение средней задержки для асинхронной системы для данной лямбды
 
-    D_synTheory = L*(2-L)/(2*(1-L))/L +0.5
-    MN_synTheory = L*(2-L)/(2*(1-L))
-    D_asinTheory = L * (2 - L) / (2 * (1 - L)) / L
+    D_synTheoryS.append(D_synTheory) #добавляем в массив теоретическую среднюю задержку для синхронной системы
+    MN_synTheoryS.append(MN_synTheory) #добавляем в массив теоретическую MN для синхронной системы
+    D_asinTheoryS.append(D_asinTheory) #добавляем в массив теоретическую среднюю задержку для асинхронной системы
 
-    D_synTheoryS.append(D_synTheory)
-    MN_synTheoryS.append(MN_synTheory)
-    D_asinTheoryS.append(D_asinTheory)
+    D_synS.append(D_syn) #добавляем в массив среднюю задержку для синхронной системы
+    MN_synS.append(MN_syn) #добавляем в массив MN для синхронной системы
+    D_asynS.append(D_asyn) #добавляем в массив среднюю задержку для асинхронной системы
 
-    D_synS.append(D_syn)
-    MN_synS.append(MN_syn)
-    D_asynS.append(D_asyn)
-
-    Ls.append(L)
-    L += 0.1
-pylab.plot(Ls, D_synS, "green")
-pylab.plot(Ls, D_synTheoryS, "yellow")
-pylab.plot(Ls, D_asynS, "red")
-pylab.plot(Ls, D_asinTheoryS, "pink")
-pylab.show()
-pylab.plot(Ls, MN_synS, "pink")
-pylab.plot(Ls, MN_synTheoryS, "green")
-pylab.show()
+    Ls.append(L) #добавляем лямбду в массив всех лямбд
+    L += 0.1 # увеличиваем лямбду
+pylab.plot(Ls, D_synS, "green") #строим график для практической средней задержки для синхронной системы
+pylab.plot(Ls, D_synTheoryS, "yellow") #строим график для теоретической средней задержки для синхронной системы
+pylab.plot(Ls, D_asynS, "red") #строимм график для практической средней задержки для асинхронной системы
+pylab.plot(Ls, D_asinTheoryS, "pink") #строим график для теоретической средней задержки для асинхронной системы
+pylab.show() #выводим
+pylab.plot(Ls, MN_synS, "pink") #строим график для практической MN для синхронной системы
+pylab.plot(Ls, MN_synTheoryS, "green") #строим график для теоретической MN для синхронной системы
+pylab.show() #выводим
