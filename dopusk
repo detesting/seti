@@ -63,7 +63,7 @@ def asynhron(timer):
             i += 1
             time += 1
         else:
-            time += 0.001
+            time += 0.01
     D_cp = D_cp/len(D_asynS)
     return D_cp
 
