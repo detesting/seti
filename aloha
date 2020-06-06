@@ -1,0 +1,191 @@
+import random
+import math
+import pylab
+
+def Time(N, L):  # функция для определения времени прихода всех сообщений
+    timer = []  # массив со всеми таймингами
+    i = 0
+    a = 0
+    while i != N:  # пока не закончились запросы
+        a -= math.log(random.random())/L  # определяем значение времени по экспоненциальному закону
+        timer.append(a)  # добавляем его в массив
+        i += 1
+    return timer  # возвращаем массив со всеми таймингами
+
+def whatP(A, p, M):  # функция для определения вероятности окна
+    pt = 0
+    if A == 'K':  # если конфликт
+        pt = p/2
+        if pt <= 1/M:
+            pt = 1/M
+    if A == 'Y':  # если успех
+        pt = p
+    if A == 'P':  # если пусто
+        pt = 2 * p
+        if pt >= 1:
+            pt = 1
+    return pt
+
+def genX(Pt, K):  # генерация вероятности для абонента, K - количество готовых к отправке
+    x = 0  # вероятность абонента
+    counter = 0  # счетчик количества абонентов, кто точно передаст
+    i = 0
+    kk = -1  # какой именно абонент
+    while i != len(K):
+        x = random.random()  # генерируем вероятность от 0 до 1
+        if x <= Pt:  # если вероятность абонента меньше вероятности окна, то он может передать
+            counter += 1  # то есть увеличиваем счетчик
+            kk = K[i]
+        i += 1
+    if counter >= 2:  # если количество передающих два и более
+        A = 'K'  # то конфликт
+        kk = -1
+    if counter == 1:  # если передающий один
+        A = 'Y'  # то успех
+    if counter == 0:  # если никто не передает в это время
+        A = 'P'  # то пусто
+        kk = -1
+    return A, kk
+
+def queueForAll(M):
+    i = 0
+    Q = []
+    queue = []
+    while i != M:
+        queue.append(Q)
+        i += 1
+    return queue
+
+def createQueue(timer, M, time, size, queue):  #создание очередей
+    sum1 = len(timer)
+    i = 0
+    while sum1 != 0:
+        if timer[i] <= time:
+            a = random.randint(0, M - 1)
+            b = timer[i]
+            if len(queue[a]) <= size:
+                queue[a].append(b)
+            timer.pop(i)
+        else:
+            sum1 = 0
+        if len(timer) == 0:
+            sum1 = 0
+    return timer, queue
+
+def ALOHA(timer, M, size):
+    sum1 = 0
+    time = 0
+    Pt = 1
+    D_cp = 0
+    MN = 0
+    aa = 0
+    queue = queueForAll(M)
+    while len(timer) > 0:
+        k = []
+        timer, queue = createQueue(timer, M, time, size, queue)
+        i = 0
+        while i != M:
+            if len(queue[i]) != 0:
+                k.append(i)  # запоминаем у каких абонентов очередь не нулевая
+            i += 1
+        A, kk = genX(Pt, k)
+        if A == 'Y':
+            D_cp += time - queue[kk][0] + 1
+            queue[kk].pop(0)
+            sum1 += 1
+        i = 0
+        while i != M:
+            MN += len(queue[i])
+            i += 1
+        Pt = whatP(A, Pt, M)
+        time += 1
+    i = 0
+    while i != M:
+        if len(queue[i]) != 0:
+            aa += len(queue[i])
+        i += 1
+    while aa > 0:
+        k = []
+        i = 0
+        while i != M:
+            if len(queue[i]) != 0:
+                k.append(i)  # запоминаем у каких абонентов очередь не нулевая
+            i += 1
+        if len(k) == 0:
+            aa = 0
+        A, kk = genX(Pt, k)
+        if A == 'Y':
+            D_cp += time - queue[kk][0] + 1
+            queue[kk].pop(0)
+            sum1 += 1
+            aa -= 1
+        i = 0
+        while i != M:
+            MN += len(queue[i])
+            i += 1
+        Pt = whatP(A, Pt, M)
+        time += 1
+    D_cp = D_cp/sum1
+    MN = MN/sum1/M
+    Lv = sum1/time
+    print(sum1)
+    return D_cp, MN, Lv
+
+L = 0.1  # начальная лямбда
+M = int(input("Введите кол-во абонентов "))  # ввод количества абонентов
+N = int(input("Введите кол-во запросов "))  # количество запросов
+size = int(input("Введите размер очереди "))  # размер очереди
+timer = []
+D = []
+MN = []
+Lvs = []
+Ls = []
+D_cp = 0
+MN_cp = 0
+Lv = 0
+D_synTheoryS = []
+MN_synTheoryS = []
+Dsmall = []
+MNsmall = []
+LsmallD =[]
+LsmallMN = []
+
+while L <= 0.99:
+    timer = Time(N, L)
+    D_cp, MN_cp, Lv = ALOHA(timer, M, size)
+    D.append(D_cp)
+    MN.append(MN_cp)
+    Lvs.append(Lv)
+    Ls.append(L)
+    if M == 1 and size >= N:
+        D_synTheory = L * (2 - L) / (2 * (1 - L)) / L + 0.5
+        MN_synTheory = L * (2 - L) / (2 * (1 - L))
+        D_synTheoryS.append(D_synTheory)
+        MN_synTheoryS.append(MN_synTheory)
+    if D_cp <= 15:
+        Dsmall.append(D_cp)
+        LsmallD.append(L)
+    if MN_cp <= 15:
+        MNsmall.append(MN_cp)
+        LsmallMN.append(L)
+    L += 0.1
+if M == 1 and size >= N:
+    pylab.plot(Ls, D, "yellow")
+    pylab.plot(Ls, D_synTheoryS, "green")
+    pylab.show()
+    pylab.plot(Ls, MN, "yellow")
+    pylab.plot(Ls, MN_synTheoryS, "green")
+    pylab.show()
+    pylab.plot(Ls, Lvs, "pink")
+    pylab.show()
+else:
+    pylab.plot(Ls, D, "yellow")
+    pylab.show()
+    pylab.plot(LsmallD, Dsmall, "red")
+    pylab.show()
+    pylab.plot(Ls, MN, "green")
+    pylab.show()
+    pylab.plot(LsmallMN, MNsmall, "red")
+    pylab.show()
+    pylab.plot(Ls, Lvs, "pink")
+    pylab.show()
